@@ -1,0 +1,36 @@
+{
+  "name": "sistema-controle-ponto",
+  "version": "1.0.0",
+  "description": "Sistema Web Completo de Controle de Ponto de Funcionários com Painel Administrativo e Notificações por E-mail",
+  "main": "server.js",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node tests/system.test.js",
+    "db:init": "node database/init.js"
+  },
+  "keywords": [
+    "ponto-eletronico",
+    "controle-de-ponto",
+    "rh",
+    "nodejs",
+    "express",
+    "postgresql",
+    "nodemailer"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^6.9.16",
+    "pg": "^8.13.1"
+  }
+}

@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Sistema Web Corporativo de Controle de Ponto de Funcionários com Painel Administrativo, Cálculo Preciso de Horas e Notificações por E-mail.">
+  <title>Chronos Ponto | Controle de Ponto Inteligente</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Navbar Superior -->
+    <header class="navbar" id="mainNavbar">
+      <div class="brand">
+        <div class="brand-logo">⏱️</div>
+        <div class="brand-text">
+          <h1>Chronos Ponto</h1>
+          <span>Controle de Ponto Corporativo</span>
+        </div>
+      </div>
+
+      <div class="nav-actions" id="navActions" style="display: none;">
+        <div class="user-profile-badge">
+          <div class="user-avatar" id="navUserAvatar">U</div>
+          <div class="user-details">
+            <span class="user-name" id="navUserName">Nome do Usuário</span>
+            <span class="user-role" id="navUserRole">Colaborador</span>
+          </div>
+        </div>
+        <button class="btn btn-outline btn-sm" id="btnLogout" onclick="handleLogout()">Sair</button>
+      </div>
+    </header>
+
+    <!-- ==============================================================
+         1. TELA DE AUTENTICAÇÃO / LOGIN
+         ============================================================== -->
+    <section class="view-section active" id="viewAuth">
+      <div class="auth-wrapper">
+        <div class="card">
+          <div class="card-header" style="justify-content: center; text-align: center; border-bottom: none; margin-bottom: 10px;">
+            <div>
+              <h2 style="font-size: 1.5rem; margin-bottom: 4px;">Identificação de Acesso</h2>
+              <p style="font-size: 0.85rem;">Insira suas credenciais corporativas</p>
+            </div>
+          </div>
+
+          <div class="auth-tabs">
+            <button class="auth-tab-btn active" id="tabLoginEmployee" onclick="switchLoginMode('employee')">Colaborador</button>
+            <button class="auth-tab-btn" id="tabLoginAdmin" onclick="switchLoginMode('admin')">Administrador</button>
+          </div>
+
+          <form id="formLogin" onsubmit="handleFormLogin(event)">
+            <div class="form-group">
+              <label class="form-label" id="lblIdentifier">Matrícula ou E-mail</label>
+              <input type="text" class="form-input" id="loginIdentifier" placeholder="Ex: FUNC001 ou carlos.silva@empresa.com.br" required autocomplete="username">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Senha / PIN de Acesso</label>
+              <input type="password" class="form-input" id="loginPassword" placeholder="••••••••" required autocomplete="current-password">
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 8px;" id="btnLoginSubmit">
+              Entrar no Sistema
+            </button>
+          </form>
+
+          <!-- Atalhos rápidos de teste e demonstração -->
+          <div class="demo-shortcuts">
+            <div class="demo-title">
+              <span>⚡</span> Atalhos Rápidos para Demonstração:
+            </div>
+            <div class="demo-buttons-grid">
+              <button class="btn btn-outline btn-sm" onclick="quickFillDemo('FUNC001', '123456')">
+                👤 Colaborador Demo (Carlos)
+              </button>
+              <button class="btn btn-outline btn-sm" onclick="quickFillDemo('ADM001', 'admin123')">
+                🛡️ Administrador Demo
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==============================================================
+         2. TELA DO FUNCIONÁRIO (BATER PONTO)
+         ============================================================== -->
+    <section class="view-section" id="viewEmployee">
+      <!-- Hero Card com Relógio Digital Central e Status -->
+      <div class="clock-hero-card">
+        <div class="current-date-display" id="currentDateDisplay">
+          Carregando data...
+        </div>
+
+        <div class="digital-clock" id="digitalClockDisplay">
+          00:00 <span class="seconds">:00</span>
+        </div>
+
+        <!-- Indicador de Status do Expediente -->
+        <div>
+          <div class="status-badge-container status-not_started" id="punchStatusBadge">
+            <span class="status-indicator-dot"></span>
+            <span>Verificando status...</span>
+          </div>
+        </div>
+
+        <!-- Tempo trabalhado no dia (ao vivo) -->
+        <div style="margin-bottom: 24px;">
+          <span style="font-size: 0.82rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600; letter-spacing: 0.05em;">Tempo trabalhado hoje:</span>
+          <div style="font-family: var(--font-display); font-size: 1.8rem; font-weight: 700; color: #ffffff;" id="liveTimerDisplay">00h 00m</div>
+        </div>
+
+        <!-- Botões de Ação para o Ponto -->
+        <div class="punch-actions-grid">
+          <button class="btn btn-primary punch-btn-main" id="btnClockIn" onclick="handleClockIn()">
+            <span style="font-size: 1.2rem;">▶️</span> Iniciar Expediente
+          </button>
+
+          <button class="btn btn-warning punch-btn-main" id="btnLunch" disabled>
+            <span>🍽️</span> Iniciar Almoço
+          </button>
+
+          <button class="btn btn-danger punch-btn-main" id="btnClockOut" onclick="handleOpenClockOutModal()" disabled>
+            <span>⏹️</span> Encerrar Expediente
+          </button>
+        </div>
+      </div>
+
+      <!-- Grade dos Registros do Dia -->
+      <div class="day-timeline-card">
+        <div class="time-slot">
+          <div class="time-slot-label">Entrada</div>
+          <div class="time-slot-value highlight" id="slotClockIn">--:--</div>
+        </div>
+        <div class="time-slot">
+          <div class="time-slot-label">Início Almoço</div>
+          <div class="time-slot-value" id="slotLunchStart">--:--</div>
+        </div>
+        <div class="time-slot">
+          <div class="time-slot-label">Retorno Almoço</div>
+          <div class="time-slot-value" id="slotLunchEnd">--:--</div>
+        </div>
+        <div class="time-slot">
+          <div class="time-slot-label">Saída</div>
+          <div class="time-slot-value" id="slotClockOut">--:--</div>
+        </div>
+      </div>
+
+      <!-- Resumo Acumulado de Horas (Cards de Métricas) -->
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-icon">📅</div>
+          <div class="metric-info">
+            <div class="metric-label">Total Hoje</div>
+            <div class="metric-value" id="metricTodayVal">00h 00m</div>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon">📊</div>
+          <div class="metric-info">
+            <div class="metric-label">Total Semana</div>
+            <div class="metric-value" id="metricWeekVal">00h 00m</div>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-icon">🗓️</div>
+          <div class="metric-info">
+            <div class="metric-label">Total Mês</div>
+            <div class="metric-value" id="metricMonthVal">00h 00m</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Histórico de Registros Anteriores do Funcionário -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>📋</span> Meus Registros Recentes
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="loadEmployeeHistory()">Atualizar</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="modern-table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Entrada</th>
+                <th>Intervalo</th>
+                <th>Saída</th>
+                <th>Líquido</th>
+                <th>Comprovante</th>
+              </tr>
+            </thead>
+            <tbody id="employeeHistoryTableBody">
+              <tr>
+                <td colspan="6" style="text-align: center; padding: 20px; color: var(--text-muted);">Carregando histórico...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==============================================================
+         3. TELA DO ADMINISTRADOR (PAINEL GESTOR)
+         ============================================================== -->
+    <section class="view-section" id="viewAdmin">
+      <!-- Abas de Navegação do Administrador -->
+      <div class="admin-nav-tabs">
+        <button class="admin-tab-btn active" data-target="tabAdminDashboard">
+          <span>📈</span> Visão Geral (Dashboard)
+        </button>
+        <button class="admin-tab-btn" data-target="tabAdminRecords">
+          <span>📑</span> Registros & Relatórios
+        </button>
+        <button class="admin-tab-btn" data-target="tabAdminEmployees">
+          <span>👥</span> Gestão de Funcionários
+        </button>
+        <button class="admin-tab-btn" data-target="tabAdminSettings">
+          <span>⚙️</span> Configurações & E-mails
+        </button>
+      </div>
+
+      <!-- Aba 1: Dashboard Executivo -->
+      <div class="admin-tab-content active" id="tabAdminDashboard">
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-icon">👥</div>
+            <div class="metric-info">
+              <div class="metric-label">Colaboradores Ativos</div>
+              <div class="metric-value" id="kpiActiveEmployees">0</div>
+            </div>
+          </div>
+
+          <div class="metric-card" style="border-color: rgba(16, 185, 129, 0.4);">
+            <div class="metric-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">🟢</div>
+            <div class="metric-info">
+              <div class="metric-label">Trabalhando Agora</div>
+              <div class="metric-value" id="kpiWorkingNow" style="color: #34d399;">0</div>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon" style="background: rgba(99, 102, 241, 0.15); color: #a5b4fc;">✅</div>
+            <div class="metric-info">
+              <div class="metric-label">Expedientes Encerrados Hoje</div>
+              <div class="metric-value" id="kpiCompletedToday">0</div>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon">⏱️</div>
+            <div class="metric-info">
+              <div class="metric-label">Total Horas Empresa (Mês)</div>
+              <div class="metric-value" id="kpiMonthTotal">00h 00m</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <span>⚡</span> Colaboradores em Expediente Ativo (Tempo Real)
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="loadDashboardKPIs()">Recarregar</button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="modern-table">
+              <thead>
+                <tr>
+                  <th>Colaborador</th>
+                  <th>Horário Entrada</th>
+                  <th>Status</th>
+                  <th>Tempo Decorrido</th>
+                  <th>Token Atual</th>
+                </tr>
+              </thead>
+              <tbody id="workingNowTableBody">
+                <tr><td colspan="5" style="text-align: center; padding: 20px;">Carregando status ao vivo...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Aba 2: Registros & Relatórios -->
+      <div class="admin-tab-content" id="tabAdminRecords">
+        <!-- Barra de Filtros -->
+        <div class="filter-toolbar">
+          <div class="form-group">
+            <label class="form-label">Funcionário</label>
+            <select class="form-select" id="filterEmployeeSelect">
+              <option value="">Todos os Funcionários</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Data Início</label>
+            <input type="date" class="form-input" id="filterStartDate">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Data Fim</label>
+            <input type="date" class="form-input" id="filterEndDate">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <select class="form-select" id="filterStatusSelect">
+              <option value="">Todos os Status</option>
+              <option value="in_progress">Em Andamento</option>
+              <option value="lunch_break">Em Almoço</option>
+              <option value="completed">Encerrado</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Pesquisa</label>
+            <input type="text" class="form-input" id="filterSearchRecord" placeholder="Nome ou matrícula...">
+          </div>
+
+          <div style="display: flex; gap: 8px; align-self: flex-end;">
+            <button class="btn btn-primary" onclick="loadAdminRecords()">Filtrar</button>
+            <button class="btn btn-success" onclick="handleExportCSV()">
+              <span>📥</span> Exportar CSV
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <span>📋</span> Histórico Geral de Registros de Ponto
+            </div>
+            <span style="font-size:0.8rem; color:var(--text-muted);">Alterações manuais são registradas na auditoria</span>
+          </div>
+
+          <div class="table-responsive">
+            <table class="modern-table">
+              <thead>
+                <tr>
+                  <th>Colaborador</th>
+                  <th>Data</th>
+                  <th>Entrada</th>
+                  <th>Intervalo</th>
+                  <th>Saída</th>
+                  <th>Líquido</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="adminRecordsTableBody">
+                <tr><td colspan="8" style="text-align: center; padding: 20px;">Carregando registros...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Aba 3: Gestão de Funcionários -->
+      <div class="admin-tab-content" id="tabAdminEmployees">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <span>👥</span> Colaboradores Cadastrados
+            </div>
+            <div style="display:flex; gap:10px;">
+              <input type="text" class="form-input" id="searchEmployeeInput" placeholder="Buscar por nome ou matrícula..." style="width: 250px;" oninput="loadAdminEmployees()">
+              <button class="btn btn-primary" onclick="openAddEmployeeModal()">
+                <span>➕</span> Cadastrar Colaborador
+              </button>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="modern-table">
+              <thead>
+                <tr>
+                  <th>Nome Completo</th>
+                  <th>Matrícula</th>
+                  <th>Cargo</th>
+                  <th>Departamento</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="employeesTableBody">
+                <tr><td colspan="6" style="text-align: center; padding: 20px;">Carregando funcionários...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Aba 4: Configurações & E-mails -->
+      <div class="admin-tab-content" id="tabAdminSettings">
+        <div class="card" style="margin-bottom: 24px;">
+          <div class="card-header">
+            <div class="card-title">
+              <span>⚙️</span> Configurações do Sistema & Notificações
+            </div>
+          </div>
+
+          <form onsubmit="handleSaveSettings(event)">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+              <div class="form-group">
+                <label class="form-label">E-mail do Administrador (Destinatário dos Relatórios)</label>
+                <input type="email" class="form-input" id="settingAdminEmail" required placeholder="admin@empresa.com.br">
+                <div class="form-hint">Receberá comprovantes de encerramento e resumos diários.</div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Nome Oficial da Empresa</label>
+                <input type="text" class="form-input" id="settingCompanyName" required placeholder="Ex: Acme Tecnologia S.A.">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Servidor SMTP Host</label>
+                <input type="text" class="form-input" id="settingSmtpHost" placeholder="smtp.mailtrap.io ou smtp.gmail.com">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Porta SMTP</label>
+                <input type="number" class="form-input" id="settingSmtpPort" placeholder="587 ou 2525">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Usuário SMTP</label>
+                <input type="text" class="form-input" id="settingSmtpUser" placeholder="usuario_smtp">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Senha SMTP (Deixe em branco para manter a atual)</label>
+                <input type="password" class="form-input" id="settingSmtpPass" placeholder="••••••••">
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 10px;">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" id="settingDailyReportEnabled" style="width: 18px; height: 18px;">
+                <span style="font-size: 0.9rem; color: #fff;">Habilitar envio automático diário de relatório às 20h</span>
+              </label>
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap;">
+              <button type="submit" class="btn btn-primary">Salvar Configurações</button>
+              <button type="button" class="btn btn-outline" id="btnTestEmail" onclick="handleTestEmail()">
+                ✉️ Disparar E-mail de Teste Agora
+              </button>
+              <button type="button" class="btn btn-warning" id="btnTriggerDailyReport" onclick="handleTriggerDailyReport()">
+                📊 Disparar Relatório Diário de Hoje por E-mail
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <span>📨</span> Histórico de Envios de E-mail (Logs do Servidor)
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="loadEmailLogs()">Atualizar Logs</button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="modern-table">
+              <thead>
+                <tr>
+                  <th>Data e Hora</th>
+                  <th>Destinatário</th>
+                  <th>Assunto</th>
+                  <th>Status</th>
+                  <th>Tipo</th>
+                </tr>
+              </thead>
+              <tbody id="emailLogsTableBody">
+                <tr><td colspan="5" style="text-align: center; padding: 20px;">Carregando histórico de e-mails...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ==============================================================
+       MODAIS DO SISTEMA
+       ============================================================== -->
+
+  <!-- Modal 1: Confirmação de Encerramento de Ponto -->
+  <div class="modal-overlay" id="modalConfirmClockOut">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Encerrar Expediente</h3>
+        <button class="modal-close-btn" onclick="handleCloseClockOutModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom: 12px;">Tem certeza que deseja encerrar o expediente de trabalho de hoje?</p>
+        <p style="font-size: 0.85rem; color: var(--text-muted);">
+          Ao confirmar, o horário exato do servidor será registrado permanentemente, o total líquido de horas será calculado e um e-mail de notificação será emitido ao administrador com o comprovante.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="handleCloseClockOutModal()">Cancelar</button>
+        <button class="btn btn-danger" onclick="handleConfirmClockOut()">Confirmar Encerramento</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Adicionar Colaborador -->
+  <div class="modal-overlay" id="modalAddEmployee">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Cadastrar Novo Colaborador</h3>
+        <button class="modal-close-btn" onclick="closeAddEmployeeModal()">&times;</button>
+      </div>
+      <form id="formAddEmployee" onsubmit="handleSaveNewEmployee(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Nome Completo</label>
+            <input type="text" class="form-input" id="addEmpName" required placeholder="Ex: Juliana Mendes">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Matrícula / Código de Identificação</label>
+            <input type="text" class="form-input" id="addEmpCode" required placeholder="Ex: FUNC004">
+          </div>
+          <div class="form-group">
+            <label class="form-label">E-mail Corporativo</label>
+            <input type="email" class="form-input" id="addEmpEmail" placeholder="juliana.mendes@empresa.com.br">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Senha / PIN Inicial</label>
+            <input type="password" class="form-input" id="addEmpPassword" required placeholder="Mínimo 6 caracteres">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Cargo</label>
+            <input type="text" class="form-input" id="addEmpPosition" placeholder="Ex: Engenheiro de Software">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Departamento</label>
+            <input type="text" class="form-input" id="addEmpDepartment" placeholder="Ex: Tecnologia">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeAddEmployeeModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar Colaborador</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 3: Editar Colaborador -->
+  <div class="modal-overlay" id="modalEditEmployee">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Editar Colaborador</h3>
+        <button class="modal-close-btn" onclick="closeEditEmployeeModal()">&times;</button>
+      </div>
+      <form id="formEditEmployee" onsubmit="handleUpdateEmployee(event)">
+        <input type="hidden" id="editEmpId">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Nome Completo</label>
+            <input type="text" class="form-input" id="editEmpName" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Matrícula</label>
+            <input type="text" class="form-input" id="editEmpCode" disabled>
+          </div>
+          <div class="form-group">
+            <label class="form-label">E-mail</label>
+            <input type="email" class="form-input" id="editEmpEmail">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Cargo</label>
+            <input type="text" class="form-input" id="editEmpPosition">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Departamento</label>
+            <input type="text" class="form-input" id="editEmpDepartment">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Status da Conta</label>
+            <select class="form-select" id="editEmpActive">
+              <option value="1">Ativo</option>
+              <option value="0">Inativo (Bloquear Acesso)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Redefinir Senha / PIN (Deixe em branco para não alterar)</label>
+            <input type="password" class="form-input" id="editEmpNewPass" placeholder="Nova senha se desejar alterar">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeEditEmployeeModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 4: Correção Auditada de Registro de Ponto -->
+  <div class="modal-overlay" id="modalCorrectRecord">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Ajustar Registro de Ponto (Auditado)</h3>
+        <button class="modal-close-btn" onclick="closeCorrectRecordModal()">&times;</button>
+      </div>
+      <form id="formCorrectRecord" onsubmit="handleSaveRecordCorrection(event)">
+        <div class="modal-body">
+          <div style="background: rgba(37, 99, 235, 0.08); padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 0.88rem;">
+            Colaborador: <strong id="correctRecordEmployee" style="color:#fff;">-</strong><br>
+            Data: <strong id="correctRecordDate" style="color:#fff;">-</strong>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Horário de Entrada</label>
+            <input type="datetime-local" class="form-input" id="correctClockIn">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Início do Almoço / Intervalo</label>
+            <input type="datetime-local" class="form-input" id="correctLunchStart">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Retorno do Almoço / Intervalo</label>
+            <input type="datetime-local" class="form-input" id="correctLunchEnd">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Horário de Saída</label>
+            <input type="datetime-local" class="form-input" id="correctClockOut">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" style="color: #f59e0b;">* Justificativa da Correção (Obrigatória para Auditoria)</label>
+            <textarea class="form-input" id="correctJustification" required rows="3" placeholder="Ex: O funcionário esqueceu de registrar o ponto de saída devido a reunião externa com cliente."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="closeCorrectRecordModal()">Cancelar</button>
+          <button type="submit" class="btn btn-warning">Salvar Correção Auditada</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 5: Trilha de Auditoria -->
+  <div class="modal-overlay" id="modalAuditLog">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Trilha de Auditoria do Registro</h3>
+        <button class="modal-close-btn" onclick="closeAuditModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="auditTimelineContent">
+        Carregando histórico...
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeAuditModal()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/admin.js"></script>
+  <script>
+    // Gerenciador de Inicialização e Troca de Views
+    let activeLoginRole = 'employee';
+
+    function switchLoginMode(role) {
+      activeLoginRole = role;
+      const btnEmp = document.getElementById('tabLoginEmployee');
+      const btnAdm = document.getElementById('tabLoginAdmin');
+      const lblIdent = document.getElementById('lblIdentifier');
+      const inputIdent = document.getElementById('loginIdentifier');
+
+      if (role === 'employee') {
+        btnEmp.classList.add('active');
+        btnAdm.classList.remove('active');
+        lblIdent.textContent = 'Matrícula ou E-mail';
+        inputIdent.placeholder = 'Ex: FUNC001 ou carlos.silva@empresa.com.br';
+      } else {
+        btnAdm.classList.add('active');
+        btnEmp.classList.remove('active');
+        lblIdent.textContent = 'E-mail ou Matrícula Administrativa';
+        inputIdent.placeholder = 'Ex: admin@empresa.com.br ou ADM001';
+      }
+    }
+
+    function quickFillDemo(identifier, pass) {
+      document.getElementById('loginIdentifier').value = identifier;
+      document.getElementById('loginPassword').value = pass;
+      if (identifier.startsWith('ADM')) {
+        switchLoginMode('admin');
+      } else {
+        switchLoginMode('employee');
+      }
+    }
+
+    async function handleFormLogin(e) {
+      e.preventDefault();
+      const identifier = document.getElementById('loginIdentifier').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const btn = document.getElementById('btnLoginSubmit');
+      btn.disabled = true;
+      btn.textContent = 'Autenticando...';
+
+      try {
+        const res = await api.post('/auth/login', { identifier, password });
+        Auth.setSession(res.token, res.user);
+        Toast.success(`Bem-vindo(a), ${res.user.name}!`);
+        renderCurrentState();
+      } catch (err) {
+        Toast.error(err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Entrar no Sistema';
+      }
+    }
+
+    function handleLogout() {
+      Auth.clearSession();
+      renderCurrentState();
+      Toast.info('Você saiu do sistema.');
+    }
+
+    function renderCurrentState() {
+      const user = Auth.getUser();
+      const navActions = document.getElementById('navActions');
+      const viewAuth = document.getElementById('viewAuth');
+      const viewEmployee = document.getElementById('viewEmployee');
+      const viewAdmin = document.getElementById('viewAdmin');
+
+      viewAuth.classList.remove('active');
+      viewEmployee.classList.remove('active');
+      viewAdmin.classList.remove('active');
+
+      if (!user) {
+        navActions.style.display = 'none';
+        viewAuth.classList.add('active');
+      } else {
+        navActions.style.display = 'flex';
+        document.getElementById('navUserName').textContent = user.name;
+        document.getElementById('navUserAvatar').textContent = user.name.charAt(0).toUpperCase();
+        document.getElementById('navUserRole').textContent = user.role === 'admin' ? '🛡️ Administrador' : (user.position || 'Colaborador');
+
+        if (user.role === 'admin') {
+          viewAdmin.classList.add('active');
+          initAdminApp();
+        } else {
+          viewEmployee.classList.add('active');
+          initEmployeeApp();
+        }
+      }
+    }
+
+    // Inicialização ao carregar a página
+    document.addEventListener('DOMContentLoaded', () => {
+      renderCurrentState();
+    });
+  </script>
+</body>
+</html>
