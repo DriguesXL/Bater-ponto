@@ -21,7 +21,7 @@ async function initializeDatabase() {
       role TEXT NOT NULL DEFAULT 'employee',
       position TEXT,
       department TEXT,
-      is_active ${booleanType} NOT NULL DEFAULT 1,
+      is_active ${booleanType} NOT NULL DEFAULT ${isPostgres ? 'TRUE' : 1},
       created_at ${timestampType},
       updated_at ${timestampType}
     );
@@ -114,7 +114,7 @@ async function initializeDatabase() {
       'admin',
       'Diretor de Recursos Humanos',
       'Recursos Humanos',
-      1
+      isPostgres ? true : 1
     ]);
     console.log('[DB] Administrador criado: Usuário "ADM001" ou "admin@empresa.com.br", Senha: "admin123"');
   }
@@ -162,7 +162,7 @@ async function initializeDatabase() {
         'employee',
         emp.position,
         emp.department,
-        1
+        isPostgres ? true : 1
       ]);
     }
     console.log('[DB] Funcionários criados com sucesso! Códigos: FUNC001, FUNC002, FUNC003 (Senha padrão: 123456)');

@@ -28,9 +28,12 @@ router.get('/dashboard', async (req, res) => {
     const todayStr = getTodayString();
     const now = new Date();
 
+    const isPostgres = db.getClientType() === 'postgres';
+    const activeCond = isPostgres ? 'TRUE' : '1';
+
     // 1. Total de funcionários ativos
     const employeesCountQuery = await db.query(
-      `SELECT COUNT(*) as count FROM users WHERE role = 'employee' AND is_active = 1`
+      `SELECT COUNT(*) as count FROM users WHERE role = 'employee' AND is_active = ${activeCond}`
     );
     const activeEmployeesCount = parseInt(employeesCountQuery.rows[0]?.count, 10) || 0;
 
@@ -166,7 +169,7 @@ router.post('/employees', async (req, res) => {
 
     await db.query(
       `INSERT INTO users (name, employee_code, email, password_hash, role, position, department, is_active)
-       VALUES ($1, $2, $3, $4, 'employee', $5, $6, 1)`,
+       VALUES ($1, $2, $3, $4, 'employee', $5, $6, ${isPostgres ? 'TRUE' : 1})`,
       [name.trim(), cleanCode, cleanEmail, passHash, position || null, department || null]
     );
 
@@ -200,7 +203,9 @@ router.put('/employees/:id', async (req, res) => {
       passHash = await bcrypt.hash(String(new_password).trim(), salt);
     }
 
-    const activeVal = is_active === false || is_active === 0 || is_active === '0' ? 0 : 1;
+    const activeVal = isPostgres
+      ? (is_active === false || is_active === 0 || is_active === '0' ? false : true)
+      : (is_active === false || is_active === 0 || is_active === '0' ? 0 : 1);
 
     await db.query(
       `UPDATE users 
