@@ -71,6 +71,50 @@ router.post('/login', async (req, res) => {
 });
 
 /**
+ * POST /api/auth/reset
+ * Rota temporária para resetar o banco (apagar todos e criar Drigues)
+ */
+router.post('/reset', async (req, res) => {
+  try {
+    const { master_key } = req.body;
+    if (master_key !== 'RESET_2026_DRIGUES') {
+      return res.status(403).json({ error: 'Chave mestre inválida.' });
+    }
+
+    const isPostgres = db.getClientType() === 'postgres';
+
+    // Apagar todos os usuários
+    await db.query(`DELETE FROM users;`);
+
+    // Criar apenas o administrador Drigues
+    const salt = await bcrypt.genSalt(10);
+    const adminPassHash = await bcrypt.hash('1234', salt);
+
+    await db.query(`
+      INSERT INTO users (name, employee_code, email, password_hash, role, position, department, is_active)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
+    `, [
+      'Drigues',
+      'DRIGUES',
+      'admin@empresa.com.br',
+      adminPassHash,
+      'admin',
+      'Administrador do Sistema',
+      'Recursos Humanos',
+      isPostgres ? true : 1
+    ]);
+
+    return res.json({
+      success: true,
+      message: 'Banco resetado! Apenas Drigues (Senha: 1234) foi criado.',
+    });
+  } catch (err) {
+    console.error('[RESET] Erro ao resetar banco:', err);
+    return res.status(500).json({ error: 'Erro ao resetar banco de dados.' });
+  }
+});
+
+/**
  * GET /api/auth/me
  * Retorna os dados do perfil autenticado
  */
