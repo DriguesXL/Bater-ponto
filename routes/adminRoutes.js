@@ -5,6 +5,8 @@ const db = require('../database/db');
 const { authenticateToken, requireAdmin } = require('../middlewares/authMiddleware');
 const { calculateWorkMinutes, formatMinutes, getMonthRange } = require('../services/calculations');
 
+const isPostgres = db.getClientType() === 'postgres';
+
 // Todas as rotas deste router exigem autenticação e privilégio de administrador
 router.use(authenticateToken, requireAdmin);
 
