@@ -11,8 +11,7 @@
     "dev": "node --watch server.js",
     "test": "node tests/system.test.js",
     "db:init": "node database/init.js",
-    "db:setup": "node database/setup.js",
-    "postinstall": "node database/setup.js"
+    "db:setup": "node database/setup.js"
   },
   "keywords": [
     "ponto-eletronico",
