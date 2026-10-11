@@ -10,8 +10,8 @@ let pool = null;
 let sqliteDb = null;
 
 if (DB_CLIENT === 'postgres') {
-  const connectionConfig = process.env.DATABASE_URL
-    ? { connectionString: process.env.DATABASE_URL }
+    const connectionConfig = process.env.DATABASE_URL
+    ? { connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } }
     : {
         host: process.env.PG_HOST || 'localhost',
         port: parseInt(process.env.PG_PORT || '5432', 10),
@@ -20,7 +20,7 @@ if (DB_CLIENT === 'postgres') {
         password: process.env.PG_PASSWORD || 'postgres',
       };
 
-  pool = new Pool(connectionConfig);
+    pool = new Pool(connectionConfig);
 
   pool.on('error', (err) => {
     console.error('[DB] Erro inesperado no pool do PostgreSQL:', err.message);
