@@ -98,7 +98,9 @@ async function initializeDatabase() {
 
   // Verificar se já existe um administrador
   const adminCheck = await db.query(`SELECT id FROM users WHERE role = 'admin' LIMIT 1;`);
-  if (adminCheck.rows.length === 0) {
+  const hasAdmin = adminCheck.rows.length > 0;
+
+  if (!hasAdmin) {
     console.log('[DB] Criando administrador padrão...');
     const salt = await bcrypt.genSalt(10);
     const adminPassHash = await bcrypt.hash('admin123', salt);
@@ -117,11 +119,15 @@ async function initializeDatabase() {
       isPostgres ? true : 1
     ]);
     console.log('[DB] Administrador criado: Usuário "ADM001" ou "admin@empresa.com.br", Senha: "admin123"');
+  } else {
+    console.log('[DB] Administrador já existe, pulando criação padrão.');
   }
 
   // Verificar se já existem funcionários de teste para demonstração inicial
   const empCheck = await db.query(`SELECT id FROM users WHERE role = 'employee' LIMIT 1;`);
-  if (empCheck.rows.length === 0) {
+  const hasEmployees = empCheck.rows.length > 0;
+
+  if (!hasEmployees) {
     console.log('[DB] Inserindo funcionários de teste...');
     const salt = await bcrypt.genSalt(10);
     const empPassHash = await bcrypt.hash('123456', salt);
@@ -166,6 +172,8 @@ async function initializeDatabase() {
       ]);
     }
     console.log('[DB] Funcionários criados com sucesso! Códigos: FUNC001, FUNC002, FUNC003 (Senha padrão: 123456)');
+  } else {
+    console.log('[DB] Funcionários já existem, pulando criação padrão.');
   }
 
   // Configurações padrão do sistema
