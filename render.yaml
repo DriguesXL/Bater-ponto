@@ -3,7 +3,7 @@ services:
     name: sistema-controle-ponto
     runtime: node
     plan: free
-    buildCommand: npm ci
+    buildCommand: npm ci && node database/setup.js
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
