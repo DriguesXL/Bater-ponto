@@ -211,7 +211,7 @@ router.post('/lunch-start', authenticateToken, async (req, res) => {
 
     await db.query(
       `UPDATE time_records 
-       SET lunch_start = $1, status = 'lunch_break', updated_at = $1 
+       SET lunch_start = $1, status = 'lunch_break'
        WHERE id = $2`,
       [nowIso, record.id]
     );
@@ -251,7 +251,7 @@ router.post('/lunch-end', authenticateToken, async (req, res) => {
 
     await db.query(
       `UPDATE time_records 
-       SET lunch_end = $1, status = 'in_progress', updated_at = $1 
+       SET lunch_end = $1, status = 'in_progress'
        WHERE id = $2`,
       [nowIso, record.id]
     );
@@ -308,7 +308,7 @@ router.post('/clock-out', authenticateToken, async (req, res) => {
 
     await db.query(
       `UPDATE time_records 
-       SET clock_out = $1, lunch_end = $2, total_minutes = $3, status = 'completed', updated_at = $1 
+       SET clock_out = $1, lunch_end = $2, total_minutes = $3, status = 'completed'
        WHERE id = $4`,
       [nowIso, lunchEndToSet, totalMinutes, record.id]
     );
