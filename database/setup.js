@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const db = require('./database/db');
+const db = require('./db');
 
 async function setupDatabase() {
   const isPostgres = db.getClientType() === 'postgres';
