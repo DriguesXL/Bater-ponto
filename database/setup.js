@@ -98,7 +98,8 @@ async function setupDatabase() {
   await db.query(`DELETE FROM users;`);
   console.log('[DB] Usuários antigos removidos.');
 
-  // Criar apenas o administrador Drigues
+  // Criar apenas o administrador Drigues. A interface também permite que ele
+  // registre o próprio ponto.
   const salt = await bcrypt.genSalt(10);
   const adminPassHash = await bcrypt.hash('1234', salt);
 
@@ -112,11 +113,11 @@ async function setupDatabase() {
     adminPassHash,
     'admin',
     'Administrador do Sistema',
-    'Recursos Humanos',
+    null,
     isPostgres ? true : 1
   ]);
 
-  console.log('[DB] Administrador criado: Usuário "DRigues", Senha: "1234"');
+  console.log('[DB] Administrador criado: Usuário "DRIGUES", Senha: "1234"');
 
   // Configurações padrão
   const defaultSettings = [

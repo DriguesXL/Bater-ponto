@@ -86,7 +86,7 @@ router.post('/reset', async (req, res) => {
     // Apagar todos os usuários
     await db.query(`DELETE FROM users;`);
 
-    // Criar apenas o administrador Drigues
+    // Criar apenas o administrador Drigues, que também pode registrar o próprio ponto.
     const salt = await bcrypt.genSalt(10);
     const adminPassHash = await bcrypt.hash('1234', salt);
 
@@ -100,13 +100,13 @@ router.post('/reset', async (req, res) => {
       adminPassHash,
       'admin',
       'Administrador do Sistema',
-      'Recursos Humanos',
+      null,
       isPostgres ? true : 1
     ]);
 
     return res.json({
       success: true,
-      message: 'Banco resetado! Apenas Drigues (Senha: 1234) foi criado.',
+      message: 'Banco resetado! Apenas Drigues administrador (Matrícula: DRIGUES, senha: 1234) foi criado.',
     });
   } catch (err) {
     console.error('[RESET] Erro ao resetar banco:', err);

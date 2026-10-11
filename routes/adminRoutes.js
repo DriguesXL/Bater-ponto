@@ -227,6 +227,41 @@ router.put('/employees/:id', async (req, res) => {
 });
 
 /**
+ * DELETE /api/admin/employees/:id
+ * Remove definitivamente um funcionário e seus registros de ponto.
+ */
+router.delete('/employees/:id', async (req, res) => {
+  try {
+    const empId = parseInt(req.params.id, 10);
+
+    if (!Number.isInteger(empId) || empId <= 0) {
+      return res.status(400).json({ error: 'Funcionário inválido.' });
+    }
+
+    const employeeResult = await db.query(
+      `SELECT id, name FROM users WHERE id = $1 AND role = 'employee'`,
+      [empId]
+    );
+    if (employeeResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Funcionário não encontrado.' });
+    }
+
+    // A remoção dos pontos antes do usuário também funciona com bancos antigos
+    // que foram criados sem a chave estrangeira ON DELETE CASCADE.
+    await db.query(`DELETE FROM time_records WHERE user_id = $1`, [empId]);
+    await db.query(`DELETE FROM users WHERE id = $1 AND role = 'employee'`, [empId]);
+
+    return res.json({
+      success: true,
+      message: `Funcionário ${employeeResult.rows[0].name} removido com sucesso.`,
+    });
+  } catch (err) {
+    console.error('[ADMIN] Erro ao excluir funcionário:', err);
+    return res.status(500).json({ error: 'Erro ao excluir funcionário.' });
+  }
+});
+
+/**
  * GET /api/admin/records
  * Relatório completo de registros de ponto com filtros múltiplos
  */

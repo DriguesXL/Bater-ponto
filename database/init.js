@@ -96,84 +96,22 @@ async function initializeDatabase() {
     // Índices podem já existir
   }
 
-  // Verificar se já existe um administrador
-  const adminCheck = await db.query(`SELECT id FROM users WHERE role = 'admin' LIMIT 1;`);
-  const hasAdmin = adminCheck.rows.length > 0;
+  // Cria somente o administrador inicial solicitado. Não semeamos funcionários de
+  // demonstração, pois eles poluem o painel e podem ser confundidos com pessoas reais.
+  const userCheck = await db.query(`SELECT id FROM users LIMIT 1;`);
+  const hasUsers = userCheck.rows.length > 0;
 
-  if (!hasAdmin) {
-    console.log('[DB] Criando administrador padrão...');
+  if (!hasUsers) {
+    console.log('[DB] Criando administrador inicial...');
     const salt = await bcrypt.genSalt(10);
-    const adminPassHash = await bcrypt.hash('admin123', salt);
-
+    const adminPassHash = await bcrypt.hash('1234', salt);
     await db.query(`
       INSERT INTO users (name, employee_code, email, password_hash, role, position, department, is_active)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
-    `, [
-      'Administrador Geral',
-      'ADM001',
-      'admin@empresa.com.br',
-      adminPassHash,
-      'admin',
-      'Diretor de Recursos Humanos',
-      'Recursos Humanos',
-      isPostgres ? true : 1
-    ]);
-    console.log('[DB] Administrador criado: Usuário "ADM001" ou "admin@empresa.com.br", Senha: "admin123"');
+    `, ['Drigues', 'DRIGUES', 'admin@empresa.com.br', adminPassHash, 'admin', 'Administrador do Sistema', null, isPostgres ? true : 1]);
+    console.log('[DB] Administrador criado: Usuário "DRIGUES", Senha: "1234"');
   } else {
-    console.log('[DB] Administrador já existe, pulando criação padrão.');
-  }
-
-  // Verificar se já existem funcionários de teste para demonstração inicial
-  const empCheck = await db.query(`SELECT id FROM users WHERE role = 'employee' LIMIT 1;`);
-  const hasEmployees = empCheck.rows.length > 0;
-
-  if (!hasEmployees) {
-    console.log('[DB] Inserindo funcionários de teste...');
-    const salt = await bcrypt.genSalt(10);
-    const empPassHash = await bcrypt.hash('123456', salt);
-
-    const employees = [
-      {
-        name: 'Carlos Alberto Silva',
-        code: 'FUNC001',
-        email: 'carlos.silva@empresa.com.br',
-        position: 'Desenvolvedor Full Stack',
-        department: 'Tecnologia'
-      },
-      {
-        name: 'Mariana Oliveira Santos',
-        code: 'FUNC002',
-        email: 'mariana.santos@empresa.com.br',
-        position: 'Analista Financeiro',
-        department: 'Financeiro'
-      },
-      {
-        name: 'Rafael Costa Mendonça',
-        code: 'FUNC003',
-        email: 'rafael.costa@empresa.com.br',
-        position: 'Designer de Produto',
-        department: 'Design'
-      }
-    ];
-
-    for (const emp of employees) {
-      await db.query(`
-        INSERT INTO users (name, employee_code, email, password_hash, role, position, department, is_active)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
-      `, [
-        emp.name,
-        emp.code,
-        emp.email,
-        empPassHash,
-        'employee',
-        emp.position,
-        emp.department,
-        isPostgres ? true : 1
-      ]);
-    }
-    console.log('[DB] Funcionários criados com sucesso! Códigos: FUNC001, FUNC002, FUNC003 (Senha padrão: 123456)');
-  } else {
-    console.log('[DB] Funcionários já existem, pulando criação padrão.');
+    console.log('[DB] Usuários já existem, pulando criação padrão.');
   }
 
   // Configurações padrão do sistema

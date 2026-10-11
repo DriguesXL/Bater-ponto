@@ -125,12 +125,32 @@ async function loadAdminEmployees() {
           </td>
           <td>
             <button class="btn btn-outline btn-sm" onclick="openEditEmployeeModal(${e.id})">Editar / Senha</button>
+            <button class="btn btn-danger btn-sm" onclick="handleDeleteEmployee(${e.id})">Apagar</button>
           </td>
         </tr>
       `).join('');
     }
   } catch (err) {
     Toast.error('Erro ao listar funcionários: ' + err.message);
+  }
+}
+
+async function handleDeleteEmployee(id) {
+  const emp = allEmployeesCache.find(e => e.id === id);
+  if (!emp) return;
+
+  const confirmed = window.confirm(
+    `Apagar ${emp.name}? Os registros de ponto desse funcionário também serão removidos e esta ação não poderá ser desfeita.`
+  );
+  if (!confirmed) return;
+
+  try {
+    await api.delete(`/admin/employees/${id}`);
+    Toast.success('Funcionário apagado com sucesso.');
+    await loadAdminEmployees();
+    await loadDashboardKPIs();
+  } catch (err) {
+    Toast.error(err.message);
   }
 }
 

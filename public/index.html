@@ -28,6 +28,8 @@
             <span class="user-role" id="navUserRole">Colaborador</span>
           </div>
         </div>
+        <button class="btn btn-outline btn-sm" id="btnAdminPunch" style="display: none;" onclick="showAdminPunchView()">Bater ponto</button>
+        <button class="btn btn-outline btn-sm" id="btnAdminPanel" style="display: none;" onclick="showAdminPanel()">Painel admin</button>
         <button class="btn btn-outline btn-sm" id="btnLogout" onclick="handleLogout()">Sair</button>
       </div>
     </header>
@@ -739,6 +741,8 @@
       const viewAuth = document.getElementById('viewAuth');
       const viewEmployee = document.getElementById('viewEmployee');
       const viewAdmin = document.getElementById('viewAdmin');
+      const btnAdminPunch = document.getElementById('btnAdminPunch');
+      const btnAdminPanel = document.getElementById('btnAdminPanel');
 
       viewAuth.classList.remove('active');
       viewEmployee.classList.remove('active');
@@ -746,6 +750,8 @@
 
       if (!user) {
         navActions.style.display = 'none';
+        btnAdminPunch.style.display = 'none';
+        btnAdminPanel.style.display = 'none';
         viewAuth.classList.add('active');
       } else {
         navActions.style.display = 'flex';
@@ -754,13 +760,35 @@
         document.getElementById('navUserRole').textContent = user.role === 'admin' ? '🛡️ Administrador' : (user.position || 'Colaborador');
 
         if (user.role === 'admin') {
+          btnAdminPunch.style.display = 'inline-flex';
+          btnAdminPanel.style.display = 'none';
           viewAdmin.classList.add('active');
           initAdminApp();
         } else {
+          btnAdminPunch.style.display = 'none';
+          btnAdminPanel.style.display = 'none';
           viewEmployee.classList.add('active');
           initEmployeeApp();
         }
       }
+    }
+
+    // Administradores também podem registrar o próprio ponto, sem perder o
+    // acesso ao painel de gestão.
+    function showAdminPunchView() {
+      document.getElementById('viewAdmin').classList.remove('active');
+      document.getElementById('viewEmployee').classList.add('active');
+      document.getElementById('btnAdminPunch').style.display = 'none';
+      document.getElementById('btnAdminPanel').style.display = 'inline-flex';
+      initEmployeeApp();
+    }
+
+    function showAdminPanel() {
+      document.getElementById('viewEmployee').classList.remove('active');
+      document.getElementById('viewAdmin').classList.add('active');
+      document.getElementById('btnAdminPanel').style.display = 'none';
+      document.getElementById('btnAdminPunch').style.display = 'inline-flex';
+      initAdminApp();
     }
 
     // Inicialização ao carregar a página
