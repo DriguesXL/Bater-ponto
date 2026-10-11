@@ -27,16 +27,16 @@ async function initializeDatabase() {
     );
   `);
 
-  // 2. Tabela time_records
+// 2. Tabela time_records
   await db.query(`
     CREATE TABLE IF NOT EXISTS time_records (
       id ${idType},
-      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL,
       record_date TEXT NOT NULL,
-      clock_in TEXT NOT NULL,
-      lunch_start TEXT,
-      lunch_end TEXT,
-      clock_out TEXT,
+      clock_in ${isPostgres ? 'TIMESTAMP WITH TIME ZONE' : 'TEXT'} NOT NULL,
+      lunch_start ${isPostgres ? 'TIMESTAMP WITH TIME ZONE' : 'TEXT'},
+      lunch_end ${isPostgres ? 'TIMESTAMP WITH TIME ZONE' : 'TEXT'},
+      clock_out ${isPostgres ? 'TIMESTAMP WITH TIME ZONE' : 'TEXT'},
       total_minutes INTEGER DEFAULT 0,
       status TEXT NOT NULL DEFAULT 'in_progress',
       unique_code TEXT NOT NULL UNIQUE,
