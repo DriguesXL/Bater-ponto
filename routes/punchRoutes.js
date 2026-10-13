@@ -143,19 +143,6 @@ router.post('/clock-in', authenticateToken, async (req, res) => {
       });
     }
 
-    // Verifica se já completou expediente hoje
-    const checkTodayCompleted = await db.query(
-      `SELECT * FROM time_records 
-       WHERE user_id = $1 AND record_date = $2 AND status = 'completed' LIMIT 1`,
-      [userId, todayStr]
-    );
-
-    if (checkTodayCompleted.rows.length > 0) {
-      return res.status(400).json({
-        error: 'Você já encerrou o expediente de hoje. Caso precise de um registro extra, consulte o administrador.',
-      });
-    }
-
     // Gera código único criptográfico do comprovante
     const uniqueCode = 'REG-' + crypto.randomBytes(6).toString('hex').toUpperCase();
 
